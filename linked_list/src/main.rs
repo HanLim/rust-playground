@@ -4,6 +4,7 @@ mod linked_list {
     use std::fmt::Display;
     use std::rc::{Rc, Weak};
 
+    #[derive(Debug)]
     pub struct Node<T>
     where
         T: Display + Copy + Clone,
@@ -18,12 +19,21 @@ mod linked_list {
     {
         pub fn new(value: T) -> Node<T> {
             Node {
-                value: value,
+                value,
                 next: None,
             }
         }
     }
 
+    impl <T> Display for Node<T> 
+    where T: Display + Copy + Clone
+    {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "{}", self.value)
+        }
+    }
+    
+    #[derive(Debug)]
     pub struct LinkedList<T>
     where
         T: Display + Copy + Clone,
@@ -52,51 +62,49 @@ mod linked_list {
             }
         }
 
-        pub fn head(&self) -> &Option<Rc<RefCell<Node<T>>>> {
-            &self.head
+        pub fn head(&self) -> Option<T> {
+            match &self.head {
+                Some(h) => Some(h.borrow().value),
+                None => None
+            }
+        }
+
+        pub fn tail(&self) -> Option<T> {
+            if let Some(t) = &self.tail {
+                if let Some(_rc) = t.upgrade() {
+                    return Some(_rc.borrow().value);
+                }
+            }
+            None
         }
 
         pub fn push(&mut self, value: T) {
             let new_tail = Rc::new(RefCell::new(Node::new(value)));
 
-            match &self.tail {
-                Some(old) => {
-                    match old.upgrade() {
-                        Some(old_tail) => {
-                            old_tail.borrow_mut().next = Some(new_tail.clone());
-                        }
-                        None => {
-                            self.head = Some(new_tail.clone());
-                        }
-                    }
-                }
-                None => {
-                    self.head = Some(new_tail.clone());
-                }
+            if let Some(t) = &self.tail {
+                if let Some(old_tail) = t.upgrade() {
+                    old_tail.borrow_mut().next = Some(new_tail.clone());
+                } else {
+                self.head = Some(new_tail.clone());
+                } 
+            } else {
+                self.head = Some(new_tail.clone())
             }
 
             self.tail = Some(Rc::downgrade(&new_tail));
         }
-
-        pub fn print(ll: LinkedList<T>) {
-            let mut node = ll.head.clone();
-
-            while let Some(v) = node {
-                println!("{}", v.borrow().value);
-                node = v.borrow().next.clone();
-            }
-        }
     }
+
 }
 
 fn main() {
     use linked_list::LinkedList;
 
-    let mut a = LinkedList::new(12);
+    let mut ll = LinkedList::new(12);
 
-    a.push(13);
-    a.push(11);
-    a.push(111);
+    ll.push(13);
+    ll.push(11);
+    ll.push(111);
 
-    LinkedList::print(a);
+    println!("{:#?}", ll);
 }
