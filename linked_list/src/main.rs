@@ -198,6 +198,7 @@ mod linked_list {
                 new_node.borrow_mut().next = Some(node.clone());
                 
                 prev.unwrap().borrow_mut().next = Some(new_node);
+                self.len += 1;
                 return Ok(());
             }
 
@@ -232,6 +233,7 @@ mod linked_list {
 
                 let removed_value = node.borrow().value;
                 prev.unwrap().borrow_mut().next = node.borrow().next.clone();
+                self.len -= 1;
                 return Ok(removed_value);
             }
             
