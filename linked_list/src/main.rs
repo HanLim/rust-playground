@@ -53,8 +53,12 @@ mod linked_list {
             }
         }
 
-        pub fn from() -> Self {
-            unimplemented!()
+        pub fn from(input: &[T]) -> Self {
+            let mut ll = Self::new();
+            for element in input.iter() {
+                ll.push_back(element.clone());
+            }
+            ll
         }
 
         pub fn head(&self) -> Option<T> {
@@ -162,12 +166,76 @@ mod linked_list {
             current.map(|node| Rc::try_unwrap(node).ok().unwrap().into_inner().value)
         }
 
-        pub fn insert_at(&mut self, index: usize, new_value: T) -> bool {
-            unimplemented!()
+        pub fn insert_at(&mut self, index: usize, new_value: T) -> Result<(), String> {
+            let out_of_bound_err = "Index out of bound".to_string();
+            
+            if index > self.len {
+                return Err(out_of_bound_err);
+            }
+
+            if index == 0 {
+                self.push_head(new_value);
+                return Ok(());
+            }
+
+            if index == self.len {
+                self.push_back(new_value);
+                return Ok(());
+            }
+
+            let mut current = None;
+            let mut prev;
+
+            for (i, node) in self.iter_mut().enumerate() {
+                prev = current;
+                current = Some(node.clone());
+
+                if i != index {
+                    continue;
+                }
+
+                let new_node = Rc::new(RefCell::new(Node::new(new_value)));
+                new_node.borrow_mut().next = Some(node.clone());
+                
+                prev.unwrap().borrow_mut().next = Some(new_node);
+                return Ok(());
+            }
+
+            Err(out_of_bound_err)
         }
 
-        pub fn remove_at(&mut self, index: usize) -> Option<T> {
-            unimplemented!()
+        pub fn remove_at(&mut self, index: usize) -> Result<T, String> {
+            let out_of_bound_err = "Index out of bound".to_string();
+            
+            if index >= self.len {
+                return Err(out_of_bound_err);
+            }
+
+            if index == 0 {
+                return self.pop_head().ok_or(out_of_bound_err);
+            }
+
+            if index == self.len - 1 {
+                return self.pop_back().ok_or(out_of_bound_err);
+            }
+            
+            let mut current = None;
+            let mut prev;
+
+            for (i, node) in self.iter_mut().enumerate() {
+                prev = current;
+                current = Some(node.clone());
+
+                if i != index {
+                    continue;
+                }
+
+                let removed_value = node.borrow().value;
+                prev.unwrap().borrow_mut().next = node.borrow().next.clone();
+                return Ok(removed_value);
+            }
+            
+            Err("".to_string())
         }
 
         pub fn clear(&mut self) {
@@ -178,19 +246,22 @@ mod linked_list {
             // while self.pop_back().is_some() {}
         }
 
-        pub fn replace(&mut self, index: usize, new_value: T) -> bool {
-            if index > self.len {
-                return false;
+        pub fn replace(&mut self, index: usize, new_value: T) -> Result<T, String> {
+            let out_of_bound_err = "Index out of bound".to_string();
+
+            if index >= self.len {
+                return Err(out_of_bound_err);
             }
 
             for (i, node) in self.iter_mut().enumerate() {
                 if i == index {
+                    let old_value = node.borrow().value;
                     node.borrow_mut().value = new_value;
-                    return true;
+                    return Ok(old_value)
                 }
             }
 
-            false
+            Err(out_of_bound_err)
         }
 
         pub fn index_of(&self, value: T) -> Option<usize> {
@@ -306,7 +377,7 @@ mod linked_list {
 fn main() {
     use linked_list::LinkedList;
 
-    let mut ll: LinkedList<i32> = LinkedList::new();
+    // let mut ll: LinkedList<i32> = LinkedList::new();
 
     // ll.push_back(1);
     // ll.push_back(21);
@@ -316,5 +387,22 @@ fn main() {
 
     // ll.replace(13, 311);
     // ll.display();
-    println!("{:?}", ll.iter_mut().last());
+    // println!("{:?}", ll.iter_mut().last());
+
+    let mut ll = LinkedList::from(&[1,2,3]);
+    ll.push_head(12);
+    ll.display();
+    
+    // match ll.remove_at(1) {
+    //     Ok(o) => println!("{}", o),
+    //     Err(e) => println!("{}", e.to_string())
+    // };
+
+    match ll.remove_at(3) {
+        Ok(r) => println!("removed: {}", r),
+        Err(e) => println!("{}", e.to_string())
+    };
+    ll.display();
+    println!("head: {}", ll.head().unwrap());
+    println!("tail: {}", ll.tail().unwrap());
 }
